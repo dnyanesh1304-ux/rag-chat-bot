@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RAG Document Bot & LLM Observability Platform</title>
+  <meta name="description" content="College Project: End-to-end RAG Document Assistant with local vector retrieval, grounded citations, and real-time LLM cost & performance telemetry.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="dark-theme">
+  <div class="app-container">
+    <!-- Header Navigation -->
+    <header class="app-header">
+      <div class="header-brand">
+        <div class="brand-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"></path>
+            <path d="M6 6h10"></path>
+            <path d="M6 10h10"></path>
+            <path d="M6 14h6"></path>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <h1>DocuRAG <span class="badge-pulse">Live Telemetry</span></h1>
+          <p class="brand-sub">RAG Document Intelligence + LLM Cost & Performance Monitoring</p>
+        </div>
+      </div>
+
+      <nav class="header-nav">
+        <button id="navChatBtn" class="nav-tab active" onclick="switchTab('chat')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+          </svg>
+          Document Chat
+        </button>
+        <button id="navDashboardBtn" class="nav-tab" onclick="switchTab('dashboard')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="20" x2="18" y2="10"></line>
+            <line x1="12" y1="20" x2="12" y2="4"></line>
+            <line x1="6" y1="20" x2="6" y2="14"></line>
+          </svg>
+          Telemetry & Cost Dashboard
+        </button>
+      </nav>
+
+      <div class="header-status">
+        <div class="status-pill" id="healthPill" title="System Connection Status">
+          <span class="status-dot"></span>
+          <span id="healthText">Connecting...</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <div class="main-layout">
+      <!-- Left Control Panel / Knowledge Base Sidebar -->
+      <aside class="sidebar" id="sidebar">
+        <!-- Model Selector Card -->
+        <div class="sidebar-section card">
+          <div class="section-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/>
+            </svg>
+            Active LLM Model
+          </div>
+          <div class="select-wrapper">
+            <select id="modelSelect" class="form-select" onchange="onModelChange()">
+              <option value="no-think/agy/claude-sonnet-4-6">Claude Sonnet 4.6 (Fast & Direct)</option>
+              <option value="no-think/agy/claude-opus-4-6-thinking">Claude Opus 4.6 (Deep Reasoning)</option>
+              <option value="auto/fast">Auto / Fast Routing</option>
+              <option value="auto/best-chat">Auto / Best Chat</option>
+              <option value="auto/best-coding">Auto / Best Coding</option>
+              <option value="auto/best-free">Auto / Best Free</option>
+            </select>
+          </div>
+          <div class="model-meta">
+            <span class="meta-label">Routing Provider:</span>
+            <span class="meta-val" id="modelProviderLabel">OmniRoute (Port 20128)</span>
+          </div>
+        </div>
+
+        <!-- Document Ingestion & Vector DB -->
+        <div class="sidebar-section card">
+          <div class="section-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="17 8 12 3 7 8"></polyline>
+              <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+            Upload PDF Knowledge
+          </div>
+
+          <!-- Upload Dropzone -->
+          <div class="upload-dropzone" id="dropzone" onclick="document.getElementById('pdfInput').click()">
+            <input type="file" id="pdfInput" accept=".pdf" style="display:none" onchange="handleFileUpload(event)">
+            <div class="dropzone-content">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="upload-icon">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="12" y1="18" x2="12" y2="12"></line>
+                <line x1="9" y1="15" x2="12" y2="12"></line>
+                <line x1="15" y1="15" x2="12" y2="12"></line>
+              </svg>
+              <p class="dropzone-main">Drop PDF here or <span class="highlight">browse</span></p>
+              <p class="dropzone-sub">Extracts text, creates 500-char chunks, indexes in ChromaDB</p>
+            </div>
+            <div id="uploadProgress" class="upload-progress-bar" style="display:none;"></div>
+          </div>
+
+          <div id="uploadFeedback" class="upload-feedback"></div>
+
+          <!-- Vector DB Status Summary -->
+          <div class="db-stats-box">
+            <div class="db-stat-item">
+              <span class="stat-num" id="statChunksCount">0</span>
+              <span class="stat-txt">Vector Chunks</span>
+            </div>
+            <div class="db-stat-divider"></div>
+            <div class="db-stat-item">
+              <span class="stat-num" id="statDocsCount">0</span>
+              <span class="stat-txt">Indexed PDFs</span>
+            </div>
+          </div>
+
+          <!-- Document List -->
+          <div class="doc-list-container">
+            <div class="doc-list-header">
+              <span>Indexed Documents</span>
+              <button class="btn-icon" onclick="loadDocuments()" title="Refresh Knowledge Base">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+                </svg>
+              </button>
+            </div>
+            <ul id="documentList" class="doc-list">
+              <li class="doc-item loading">Loading indexed documents...</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Quick Prompts Section -->
+        <div class="sidebar-section card">
+          <div class="section-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+            Quick Questions
+          </div>
+          <div class="quick-prompts">
+            <button class="prompt-chip" onclick="askQuickPrompt('What does CGTMSE stand for and what is its main purpose?')">
+              "What does CGTMSE stand for?"
+            </button>
+            <button class="prompt-chip" onclick="askQuickPrompt('Is CGTMSE a direct grant to businesses or a guarantee mechanism?')">
+              "Is it a direct grant to a business?"
+            </button>
+            <button class="prompt-chip" onclick="askQuickPrompt('Who can benefit from the CGTMSE credit guarantee support?')">
+              "Who can benefit from it?"
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Right Main Content Area -->
+      <main class="content-area">
+        <!-- VIEW 1: Document Chat Tab -->
+        <section id="chatView" class="tab-view active">
+          <div class="chat-wrapper">
+            <div class="chat-messages" id="chatMessages">
+              <!-- Welcome Greeting Card -->
+              <div class="message assistant-message welcome-card">
+                <div class="message-avatar">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="11" width="18" height="10" rx="2"></rect>
+                    <circle cx="12" cy="5" r="2"></circle>
+                    <path d="M12 7v4"></path>
+                    <line x1="8" y1="16" x2="8" y2="16"></line>
+                    <line x1="16" y1="16" x2="16" y2="16"></line>
+                  </svg>
+                </div>
+                <div class="message-body">
+                  <div class="message-meta-header">
+                    <span class="agent-name">RAG Document Assistant</span>
+                    <span class="agent-badge">Grounded in ChromaDB</span>
+                  </div>
+                  <div class="message-content">
+                    <p>Welcome! I am your <strong>RAG Document Assistant</strong>. Ask me questions grounded in your uploaded documents, and observe real-time latency, token usage, and cost instrumentation for every call.</p>
+                    <div class="welcome-features">
+                      <div class="feature-item">
+                        <span class="f-icon">🎯</span>
+                        <span><strong>Truthful & Grounded:</strong> Answers strictly synthesized from ChromaDB vector chunks.</span>
+                      </div>
+                      <div class="feature-item">
+                        <span class="f-icon">📑</span>
+                        <span><strong>Source Citations:</strong> Exact document names, page references, and similarity percentages.</span>
+                      </div>
+                      <div class="feature-item">
+                        <span class="f-icon">📊</span>
+                        <span><strong>Telemetry Auditing:</strong> Latency in milliseconds, prompt/completion tokens, and cost breakdown per query.</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Chat Input Area -->
+            <div class="chat-input-bar">
+              <form id="chatForm" onsubmit="submitChat(event)" class="chat-form">
+                <div class="input-container">
+                  <textarea 
+                    id="chatInput" 
+                    placeholder="Ask a question about your documents (e.g., 'What is the refund policy?' or 'What does CGTMSE stand for?')..." 
+                    rows="1" 
+                    onkeydown="handleTextareaKeydown(event)"
+                    required
+                  ></textarea>
+                  <button type="submit" id="sendBtn" class="btn-send" title="Send question (Enter)">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <line x1="22" y1="2" x2="11" y2="13"></line>
+                      <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg>
+                  </button>
+                </div>
+                <div class="chat-input-footer">
+                  <span>Press <kbd>Enter</kbd> to send, <kbd>Shift+Enter</kbd> for new line</span>
+                  <span class="model-indicator">Model: <strong id="inputModelLabel">Claude Sonnet 4.6</strong></span>
+                </div>
+              </form>
+            </div>
+          </div>
+        </section>
+
+        <!-- VIEW 2: Telemetry & Cost Dashboard Tab -->
+        <section id="dashboardView" class="tab-view">
+          <div class="dashboard-wrapper">
+            <!-- Dashboard Controls -->
+            <div class="dashboard-header">
+              <div>
+                <h2>LLM Cost & Performance Observability</h2>
+                <p class="dash-subtitle">Real-time instrumentation of request volumes, latency distributions, token ledger, and model cost comparison.</p>
+              </div>
+              <div class="dash-actions">
+                <button class="btn-secondary" onclick="loadMetrics()">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+                  </svg>
+                  Refresh Metrics
+                </button>
+              </div>
+            </div>
+
+            <!-- KPI Metric Cards Grid -->
+            <div class="kpi-grid">
+              <div class="kpi-card">
+                <div class="kpi-title">
+                  <span>Total Invocations</span>
+                  <div class="kpi-icon blue">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+                    </svg>
+                  </div>
+                </div>
+                <div class="kpi-value" id="kpiTotalCalls">0</div>
+                <div class="kpi-footer">
+                  <span class="tag-success" id="kpiSuccessRate">100% Success</span>
+                </div>
+              </div>
+
+              <div class="kpi-card">
+                <div class="kpi-title">
+                  <span>Accumulated Cost</span>
+                  <div class="kpi-icon green">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <line x1="12" y1="1" x2="12" y2="23"></line>
+                      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                    </svg>
+                  </div>
+                </div>
+                <div class="kpi-value" id="kpiTotalCost">$0.00000</div>
+                <div class="kpi-footer">
+                  <span class="text-muted">Calculated per token in/out</span>
+                </div>
+              </div>
+
+              <div class="kpi-card">
+                <div class="kpi-title">
+                  <span>Average Latency</span>
+                  <div class="kpi-icon orange">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                  </div>
+                </div>
+                <div class="kpi-value" id="kpiAvgLatency">0 ms</div>
+                <div class="kpi-footer">
+                  <span class="text-muted">End-to-end RAG roundtrip</span>
+                </div>
+              </div>
+
+              <div class="kpi-card">
+                <div class="kpi-title">
+                  <span>Tokens Processed</span>
+                  <div class="kpi-icon purple">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="4 7 4 4 20 4 20 7"></polyline>
+                      <line x1="9" y1="20" x2="15" y2="20"></line>
+                      <line x1="12" y1="4" x2="12" y2="20"></line>
+                    </svg>
+                  </div>
+                </div>
+                <div class="kpi-value" id="kpiTotalTokens">0</div>
+                <div class="kpi-footer">
+                  <span id="kpiTokenSplit" class="text-muted">Prompt: 0 | Comp: 0</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Optimization Recommendations Banner -->
+            <div class="recommendations-box card" id="recBox">
+              <div class="rec-header">
+                <span class="rec-icon">💡</span>
+                <h3>Optimization Insights & Efficiency Recommendations</h3>
+              </div>
+              <div id="recList" class="rec-list">
+                <p class="text-muted">Run queries to generate automatic model efficiency recommendations.</p>
+              </div>
+            </div>
+
+            <!-- Model Cost / Performance Comparison Table -->
+            <div class="dashboard-section card">
+              <div class="section-header">
+                <h3>Model Cost & Speed Comparison</h3>
+                <span class="section-sub">Analyze latency vs cost trade-offs across active models</span>
+              </div>
+              <div class="table-container">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Model Name</th>
+                      <th>Requests</th>
+                      <th>Total Cost ($)</th>
+                      <th>Avg Cost / Query</th>
+                      <th>Avg Latency</th>
+                      <th>Success Rate</th>
+                    </tr>
+                  </thead>
+                  <tbody id="modelComparisonBody">
+                    <tr><td colspan="6" class="text-center text-muted">No telemetry logged yet.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Recent Requests Audit Log -->
+            <div class="dashboard-section card">
+              <div class="section-header">
+                <h3>Request Telemetry Audit Log</h3>
+                <span class="section-sub">Granular per-request audit trail stored in SQLite</span>
+              </div>
+              <div class="table-container">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Time</th>
+                      <th>Query</th>
+                      <th>Model</th>
+                      <th>Latency</th>
+                      <th>Tokens</th>
+                      <th>Est. Cost</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="recentLogsBody">
+                    <tr><td colspan="7" class="text-center text-muted">No requests recorded.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
