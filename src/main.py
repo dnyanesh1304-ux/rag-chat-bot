@@ -20,13 +20,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
 
+# Resolve project root (works for both local and Vercel)
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# Load .env with explicit path first
+env_path = os.path.join(PROJECT_ROOT, ".env")
+if os.path.exists(env_path):
+    load_dotenv(dotenv_path=env_path)
 load_dotenv()
 
 # Detect Vercel environment
 IS_VERCEL = bool(os.getenv("VERCEL") or os.getenv("VERCEL_ENV"))
-
-# Resolve project root (works for both local and Vercel)
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Configuration — use /tmp on Vercel (only writable directory)
 if IS_VERCEL:
@@ -42,7 +46,7 @@ COLLECTION_NAME = os.getenv("COLLECTION_NAME", "rag_documents")
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "all-MiniLM-L6-v2")
 CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", "500"))
 CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", "100"))
-DEFAULT_MODEL = os.getenv("DEFAULT_MODEL", "no-think/agy/claude-sonnet-4-6")
+DEFAULT_MODEL = os.getenv("DEFAULT_MODEL", "auto/best-chat")
 
 os.makedirs(DOCUMENTS_DIR, exist_ok=True)
 os.makedirs(os.path.dirname(TELEMETRY_DB_PATH) or ".", exist_ok=True)
@@ -113,12 +117,12 @@ def get_health():
 def get_models():
     """List available LLM models with descriptions."""
     catalog = [
-        {"id": "no-think/agy/claude-sonnet-4-6", "name": "Claude Sonnet 4.6 (Fast & Direct)", "tier": "Balanced", "recommended": True},
-        {"id": "no-think/agy/claude-opus-4-6-thinking", "name": "Claude Opus 4.6 (Deep Reasoning)", "tier": "Premium", "recommended": False},
-        {"id": "auto/fast", "name": "Auto / Fast Routing", "tier": "Fast", "recommended": False},
-        {"id": "auto/best-chat", "name": "Auto / Best Chat", "tier": "Balanced", "recommended": False},
-        {"id": "auto/best-coding", "name": "Auto / Best Coding", "tier": "Premium", "recommended": False},
-        {"id": "auto/best-free", "name": "Auto / Best Free", "tier": "Free", "recommended": False}
+        {"id": "groq/qwen/qwen3.8-27b", "name": "Qwen 3.8 27B (Groq — Free, Ultra-Fast)", "tier": "Free", "recommended": True},
+        {"id": "groq/openai/gpt-oss-120b", "name": "GPT-OSS 120B (Groq — Free, Powerful)", "tier": "Free", "recommended": False},
+        {"id": "groq/openai/gpt-oss-20b", "name": "GPT-OSS 20B (Groq — Free, Fast)", "tier": "Free", "recommended": False},
+        {"id": "auto/best-chat", "name": "Auto / Best Chat (OmniRoute)", "tier": "Balanced", "recommended": False},
+        {"id": "auto/fast", "name": "Auto / Fast (OmniRoute)", "tier": "Fast", "recommended": False},
+        {"id": "auto/best-free", "name": "Auto / Best Free (OmniRoute)", "tier": "Free", "recommended": False},
     ]
     return {
         "default": DEFAULT_MODEL,
