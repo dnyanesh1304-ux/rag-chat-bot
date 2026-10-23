@@ -18,9 +18,30 @@
     { "src": "/api/(.*)", "dest": "/api/index.py" },
     { "src": "/(.*)", "dest": "/api/index.py" }
   ],
-  "env": {
-    "OMNIROUTE_API_BASE": "@omniroute_api_base",
-    "OMNIROUTE_API_KEY": "@omniroute_api_key",
+  {
+    
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/index.py",
+      "use": "@vercel/python",
+      "config": {
+        "maxLambdaSize": "250mb"
+      }
+    },
+    {
+      "src": "static/**",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    { "src": "/static/(.*)", "dest": "/static/$1" },
+    { "src": "/api/(.*)", "dest": "/api/index.py" },
+    { "src": "/(.*)", "dest": "/api/index.py" }
+  ]
+}
+
     "DEFAULT_MODEL": "@default_model"
   }
 }
